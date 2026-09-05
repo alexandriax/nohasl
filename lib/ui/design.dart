@@ -84,12 +84,14 @@ class ActionButton extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: ts(
-            13,
-            color: light ? ink : Colors.white,
-            weight: FontWeight.w700,
+        Flexible(
+          child: Text(
+            label,
+            style: ts(
+              13,
+              color: light ? ink : Colors.white,
+              weight: FontWeight.w700,
+            ),
           ),
         ),
         const SizedBox(width: 18),

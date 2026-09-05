@@ -4,6 +4,9 @@ import 'data/curriculum.dart';
 import 'state/learning_store.dart';
 import 'ui/design.dart';
 import 'ui/learning_pages.dart';
+import 'ui/conversation_page.dart';
+import 'ui/practice_lab.dart';
+import 'ui/review_hub.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +54,8 @@ const navItems = [
   ('Stories', Icons.auto_stories_outlined),
   ('Sign library', Icons.search_rounded),
   ('My progress', Icons.insights_rounded),
+  ('Conversation room', Icons.forum_outlined),
+  ('Review & portfolio', Icons.history_edu_outlined),
 ];
 
 class AppShell extends StatefulWidget {
@@ -122,11 +127,14 @@ class _AppShellState extends State<AppShell> {
                                   icon: const Icon(Icons.menu_rounded),
                                 ),
                               ),
-                            Text(
-                              navItems[page].$1,
-                              style: ts(14, weight: FontWeight.w700),
+                            Expanded(
+                              child: Text(
+                                navItems[page].$1,
+                                style: ts(14, weight: FontWeight.w700),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            const Spacer(),
                             if (constraints.maxWidth > 500) ...[
                               Icon(
                                 Icons.local_fire_department_outlined,
@@ -197,12 +205,14 @@ class _AppShellState extends State<AppShell> {
                                     store: widget.store,
                                     onLesson: launch,
                                   ),
-                                  2 => const PracticePage(),
+                                  2 => PracticeLab(store: widget.store),
                                   3 => StoriesPage(
                                     store: widget.store,
                                     onLesson: launch,
                                   ),
                                   4 => LibraryPage(store: widget.store),
+                                  6 => ConversationPage(store: widget.store),
+                                  7 => ReviewHub(store: widget.store),
                                   _ => ProgressPage(
                                     store: widget.store,
                                     onNavigate: navigate,
@@ -223,8 +233,18 @@ class _AppShellState extends State<AppShell> {
               ? null
               : NavigationBar(
                   height: 68,
-                  selectedIndex: page < 4 ? page : 3,
-                  onDestinationSelected: (v) => navigate(v == 3 ? 3 : v),
+                  selectedIndex: page < 3
+                      ? page
+                      : page == 6
+                      ? 3
+                      : 4,
+                  onDestinationSelected: (v) => navigate(
+                    v < 3
+                        ? v
+                        : v == 3
+                        ? 6
+                        : 7,
+                  ),
                   backgroundColor: paper,
                   indicatorColor: mint,
                   destinations: const [
@@ -241,8 +261,12 @@ class _AppShellState extends State<AppShell> {
                       label: 'Practice',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.auto_stories_outlined),
-                      label: 'Stories',
+                      icon: Icon(Icons.forum_outlined),
+                      label: 'Talk',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.history_edu_outlined),
+                      label: 'Review',
                     ),
                   ],
                 ),
@@ -526,6 +550,29 @@ class Dashboard extends StatelessWidget {
   Widget mainColumn(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ActionChip(
+            avatar: const Icon(Icons.forum_outlined, size: 16),
+            label: Text(
+              'Start a conversation',
+              style: ts(11, color: green, weight: FontWeight.w700),
+            ),
+            onPressed: () => onNavigate(6),
+          ),
+          ActionChip(
+            avatar: const Icon(Icons.replay_rounded, size: 16),
+            label: Text(
+              '${store.dueReviewCount} reviews due',
+              style: ts(11, color: green, weight: FontWeight.w700),
+            ),
+            onPressed: () => onNavigate(7),
+          ),
+        ],
+      ),
+      const SizedBox(height: 15),
       LayoutBuilder(
         builder: (context, c) => Container(
           width: double.infinity,
@@ -698,43 +745,24 @@ class Dashboard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 22),
-            Row(
-              children: List.generate(
-                9,
-                (i) => Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color:
-                                store.completed.contains(
-                                  courseLevels.first.units
-                                      .expand((u) => u.lessons)
-                                      .elementAt(i)
-                                      .id,
-                                )
-                                ? green
-                                : i == 0
-                                ? const Color(0xFFB7CE95)
-                                : line,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                      ),
-                      if (i < 8) const SizedBox(width: 5),
-                    ],
-                  ),
-                ),
-              ),
+            LinearProgressIndicator(
+              value:
+                  courseLevels.first.units
+                      .expand((u) => u.lessons)
+                      .where((l) => store.completed.contains(l.id))
+                      .length /
+                  courseLevels.first.units.expand((u) => u.lessons).length,
+              color: green,
+              backgroundColor: line,
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(5),
             ),
             const SizedBox(height: 11),
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    '${store.completed.where((id) => courseLevels.first.units.any((u) => u.lessons.any((l) => l.id == id))).length} of 9 lessons explored',
+                    '${store.completed.where((id) => courseLevels.first.units.any((u) => u.lessons.any((l) => l.id == id))).length} of ${courseLevels.first.units.expand((u) => u.lessons).length} activities explored',
                     style: ts(10, color: muted),
                   ),
                 ),
@@ -1093,7 +1121,7 @@ Future<void> showPreferences(
             ),
             const SizedBox(height: 8),
             Text(
-              'This preview includes authored lesson concepts and self-review practice. Fluent-signer video lessons and validated sign assessment are planned. Course completion measures participation, not proficiency.',
+              'This preview includes authored lesson concepts and self-review practice. Fluent-signer video lessons and validated sign assessment are planned. The expanded program includes guided practice, self-reported retrieval scheduling, and on-device conversation scenarios on compatible Apple devices. Course completion measures participation, not proficiency.',
               style: ts(12, color: muted, height: 1.8),
             ),
             if (store.storageError)

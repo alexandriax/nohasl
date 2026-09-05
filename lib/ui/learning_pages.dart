@@ -5,6 +5,7 @@ import '../data/curriculum.dart';
 import '../state/learning_store.dart';
 import '../features/practice/camera_stage.dart';
 import 'design.dart';
+import 'program_explorer.dart';
 
 String modeLabel(LessonMode mode) => switch (mode) {
   LessonMode.guided => 'Guided lesson',
@@ -35,153 +36,13 @@ Widget pageIntro(String eyebrow, String title, String subtitle) => Column(
   ],
 );
 
-class LearningPath extends StatefulWidget {
+class LearningPath extends StatelessWidget {
   const LearningPath({super.key, required this.store, required this.onLesson});
   final LearningStore store;
   final ValueChanged<Lesson> onLesson;
   @override
-  State<LearningPath> createState() => _LearningPathState();
-}
-
-class _LearningPathState extends State<LearningPath> {
-  int level = 0;
-  @override
-  Widget build(BuildContext context) {
-    final data = courseLevels[level];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        pageIntro(
-          'YOUR LEARNING PATH',
-          'Every sign is a step forward.',
-          'Six chapters of growth. Start with the foundations, then make the language your own.',
-        ),
-        SingleChildScrollView(
-          primary: false,
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (var i = 0; i < courseLevels.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: ChoiceChip(
-                    showCheckmark: false,
-                    label: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 8,
-                      ),
-                      child: Text(
-                        '${(i + 1).toString().padLeft(2, '0')}  ${courseLevels[i].title}',
-                        style: ts(
-                          12,
-                          color: i == level ? Colors.white : ink,
-                          weight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    selectedColor: green,
-                    selected: i == level,
-                    onSelected: (_) => setState(() => level = i),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 25),
-        Surface(
-          color: mint,
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'LEVEL ${(level + 1).toString().padLeft(2, '0')} · ${data.subtitle.toUpperCase()}',
-                      style: ts(
-                        9,
-                        color: green,
-                        weight: FontWeight.w800,
-                        spacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(data.title, style: ts(27, weight: FontWeight.w800)),
-                    const SizedBox(height: 8),
-                    Text(
-                      data.description,
-                      style: ts(12, color: green, height: 1.8),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 15),
-              const Icon(Icons.spa_outlined, size: 50, color: green),
-            ],
-          ),
-        ),
-        const SizedBox(height: 25),
-        for (var i = 0; i < data.units.length; i++) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 31,
-                  height: 31,
-                  decoration: BoxDecoration(
-                    color: ink,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${i + 1}',
-                      style: ts(
-                        12,
-                        color: Colors.white,
-                        weight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data.units[i].title,
-                        style: ts(18, weight: FontWeight.w800),
-                      ),
-                      Text(
-                        data.units[i].description,
-                        style: ts(11, color: muted),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          for (final lesson in data.units[i].lessons)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: lessonRow(
-                lesson,
-                widget.store.completed.contains(lesson.id),
-                () => widget.onLesson(lesson),
-              ),
-            ),
-        ],
-        const SizedBox(height: 10),
-        Text(
-          'Preview curriculum · Lesson concepts await Deaf educator review. Levels describe a learning path, not an official proficiency rating.',
-          style: ts(11, color: muted),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) =>
+      ProgramExplorer(store: store, onLesson: onLesson);
 }
 
 Widget lessonRow(Lesson lesson, bool completed, VoidCallback onTap) => Material(
@@ -421,6 +282,10 @@ class _LessonPlayerState extends State<LessonPlayer>
   Widget build(BuildContext context) {
     final lesson = widget.lesson;
     final item = lesson.steps[step];
+    final unit = courseLevels
+        .expand((l) => l.units)
+        .where((u) => u.lessons.any((l) => l.id == lesson.id))
+        .firstOrNull;
     final correct = item.correctChoice == null || answer == item.correctChoice;
     return Scaffold(
       appBar: AppBar(
@@ -459,6 +324,39 @@ class _LessonPlayerState extends State<LessonPlayer>
                           minHeight: 5,
                         ),
                         const SizedBox(height: 28),
+                        if (lesson.requiresReferenceVideo && step == 0) ...[
+                          Surface(
+                            color: peach,
+                            padding: const EdgeInsets.all(18),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Bring a fluent-signer reference',
+                                  style: ts(15, weight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'This activity needs an authentic sign demonstration or partner. Reviewed in-app signer media is pending. Use a trusted source before practicing unfamiliar language.',
+                                  style: ts(12, height: 1.8),
+                                ),
+                                if (unit != null)
+                                  TextButton.icon(
+                                    onPressed: () =>
+                                        showReferences(context, unit),
+                                    icon: const Icon(
+                                      Icons.open_in_new_rounded,
+                                      size: 16,
+                                    ),
+                                    label: const Text(
+                                      'Open educator references',
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
                         Pill(
                           modeLabel(lesson.mode).toUpperCase(),
                           icon: modeIcon(lesson.mode),
@@ -676,7 +574,9 @@ class StoriesPage extends StatelessWidget {
   final ValueChanged<Lesson> onLesson;
   @override
   Widget build(BuildContext context) {
-    final stories = allLessons
+    final stories = courseLevels
+        .expand((l) => l.units.take(2))
+        .expand((u) => u.lessons)
         .where(
           (l) =>
               l.mode == LessonMode.story || l.mode == LessonMode.conversation,
@@ -943,7 +843,7 @@ class _StoryPlayerState extends State<StoryPlayer> {
   }
 }
 
-const libraryEntries = <({String word, String category, String note})>[
+const seedLibraryEntries = <({String word, String category, String note})>[
   (
     word: 'Hello',
     category: 'Connections',
@@ -1034,6 +934,27 @@ const libraryEntries = <({String word, String category, String note})>[
   ),
 ];
 
+final libraryEntries = buildLibraryEntries();
+List<({String word, String category, String note})> buildLibraryEntries() {
+  final items = [...seedLibraryEntries];
+  final seen = items.map((e) => e.word.toLowerCase()).toSet();
+  for (var level = 0; level < courseLevels.length; level++) {
+    for (final unit in courseLevels[level].units) {
+      for (final word in unit.vocabulary) {
+        if (seen.add(word.toLowerCase())) {
+          items.add((
+            word: word,
+            category: 'Stage ${level + 1}',
+            note:
+                '${unit.title}: ${unit.description} Learn this concept from a fluent signer in context.',
+          ));
+        }
+      }
+    }
+  }
+  return List.unmodifiable(items);
+}
+
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key, required this.store});
   final LearningStore store;
@@ -1042,6 +963,7 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
+  int visibleLimit = 30;
   String query = '';
   String filter = 'All signs';
   bool savedOnly = false;
@@ -1064,7 +986,10 @@ class _LibraryPageState extends State<LibraryPage> {
           'Explore practice prompts, save what matters, and come back for another look.',
         ),
         TextField(
-          onChanged: (v) => setState(() => query = v),
+          onChanged: (v) => setState(() {
+            query = v;
+            visibleLimit = 30;
+          }),
           decoration: InputDecoration(
             hintText: 'Find a sign to explore…',
             prefixIcon: const Icon(Icons.search_rounded),
@@ -1093,11 +1018,16 @@ class _LibraryPageState extends State<LibraryPage> {
               'People',
               'Time',
               'Questions',
+              for (var stage = 1; stage <= courseLevels.length; stage++)
+                'Stage $stage',
             ])
               ChoiceChip(
                 label: Text(c, style: ts(11)),
                 selected: filter == c,
-                onSelected: (_) => setState(() => filter = c),
+                onSelected: (_) => setState(() {
+                  filter = c;
+                  visibleLimit = 30;
+                }),
               ),
             FilterChip(
               label: const Text('Saved'),
@@ -1146,7 +1076,7 @@ class _LibraryPageState extends State<LibraryPage> {
               spacing: 16,
               runSpacing: 16,
               children: [
-                for (final entry in entries)
+                for (final entry in entries.take(visibleLimit))
                   SizedBox(
                     width: (c.maxWidth - (count - 1) * 16) / count,
                     child: Surface(
@@ -1257,6 +1187,14 @@ class _LibraryPageState extends State<LibraryPage> {
             );
           },
         ),
+        if (entries.length > visibleLimit)
+          Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: ActionButton(
+              'Show more concepts (${entries.length - visibleLimit} remaining)',
+              onTap: () => setState(() => visibleLimit += 30),
+            ),
+          ),
       ],
     );
   }

@@ -130,7 +130,7 @@ void main() {
   });
   test('curriculum ids and answer keys are consistent', () {
     expect(courseLevels.length, 6);
-    expect(allLessons.length, 54);
+    expect(allLessons.length, 576);
     expect(allLessons.map((l) => l.id).toSet().length, allLessons.length);
     for (final lesson in allLessons) {
       expect(lesson.steps, isNotEmpty);
