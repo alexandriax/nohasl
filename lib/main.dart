@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'data/curriculum.dart';
+import 'features/local_models/local_models.dart';
 import 'state/learning_store.dart';
 import 'ui/design.dart';
 import 'ui/learning_pages.dart';
@@ -68,9 +69,11 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int page = 0;
   final contentScroll = ScrollController();
+  late final localModels = LocalModelManager(createLocalModelBackend());
   @override
   void dispose() {
     contentScroll.dispose();
+    localModels.dispose();
     super.dispose();
   }
 
@@ -211,7 +214,10 @@ class _AppShellState extends State<AppShell> {
                                     onLesson: launch,
                                   ),
                                   4 => LibraryPage(store: widget.store),
-                                  6 => ConversationPage(store: widget.store),
+                                  6 => ConversationPage(
+                                    store: widget.store,
+                                    localModels: localModels,
+                                  ),
                                   7 => ReviewHub(store: widget.store),
                                   _ => ProgressPage(
                                     store: widget.store,

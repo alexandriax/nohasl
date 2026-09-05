@@ -8,6 +8,7 @@ A thoughtfully designed Flutter studio for learning American Sign Language throu
 - Eight activity types per unit: observation, comprehension, grammar contrast, expressive rehearsal, retrieval, information-gap exchange, story transfer, and checkpoint. All 54 existing lesson IDs retain their original content and saved progress.
 - **24 focused practice activities** with concept checks, camera rehearsal, spatial arrangement and narrative ordering interactions, and deliberate self-reflection.
 - **18 conversation scenarios plus custom topics.** On eligible iOS 26/macOS 26 devices, Apple's Foundation Models framework supplies real on-device text conversations with follow-up questions and practice goals. Authored guided rehearsal works across platforms. The model cannot see signing or translate text into ASL.
+- **Optional downloadable conversation models:** approximately 212 MB SmolLM2 or 1.49 GB Gemma 2 in WebGPU browsers; approximately 491 MB Qwen on native platforms. Review size, memory needs and license before downloading, then choose the model separately. Apple Intelligence remains the initial default when available. Cancel downloads or replies, switch providers, and remove model files in the conversation room. See [local model setup](docs/LOCAL_MODELS.md).
 - Separate receptive and expressive **spaced-review queues**, personal practice focuses, self-rated recall, and a local reflection portfolio. Saved state migrates existing progress without resetting XP.
 - User-initiated live camera preview on supported web, iOS, Android, and macOS configurations, with self-review, timing, camera switching, and unavailable/permission handling.
 - A responsive dashboard, interactive stories, a searchable concept library drawn from the program, local progress, custom vector artwork, bundled typography, and branded platform icons.
@@ -16,7 +17,7 @@ This is a working learning application with a comprehensive **instructional blue
 
 ## Run locally
 
-The project and CI use **Flutter 3.35.1 / Dart 3.9.0**. Apple builds require macOS, Xcode with the relevant platform support, and native plugin tooling. Run `flutter doctor -v` to inspect your environment.
+The project and CI use **Flutter 3.38.10 / Dart 3.10.9**. The optional native model runtime sets the application minimums to **iOS 16.4 and macOS 14**. Apple Intelligence still requires an eligible device running iOS/macOS 26 with its model available. Apple builds require macOS, Xcode with the relevant platform support, and native plugin tooling. Run `flutter doctor -v` to inspect your environment.
 
 ```sh
 flutter pub get
@@ -31,7 +32,15 @@ flutter devices
 flutter run -d <ios-simulator-device-id>
 ```
 
-For web:
+For web, the pinned browser runtime is already bundled. After changing its sources, regenerate and test it with Node 22:
+
+```sh
+npm --prefix scripts/local_models ci --ignore-scripts
+npm --prefix scripts/local_models test
+npm --prefix scripts/local_models run build
+```
+
+Run the web app:
 
 ```sh
 flutter run -d chrome
@@ -69,6 +78,7 @@ Local verification includes the complete unit/widget suite, native learning-flow
 - [Curriculum](docs/CURRICULUM.md): sequence, editorial status, sources, and Deaf-led review requirements.
 - [Full program map](docs/PROGRAM_MAP.md): all 72 detailed unit briefs, outcomes, practice tasks, partner roles, misconceptions, and rubrics.
 - [Learning system](docs/LEARNING_SYSTEM.md): review scheduling, self-report evidence, migration, and persistence.
+- [Optional local models](docs/LOCAL_MODELS.md): provider selection, explicit downloads, browser and native runtimes, cache behavior, and limitations.
 - [Apple Intelligence](docs/APPLE_INTELLIGENCE.md): native architecture, availability, privacy, safeguards, and real-model tests.
 
 The six internal stages are learning bands, not ASLPI or SLPI ratings. Advanced transfer requires unfamiliar signers, spontaneous partner responses, delayed retrieval, varied language models, and qualified human feedback. The program map makes those requirements concrete; checking off 576 activities cannot establish proficiency by itself.

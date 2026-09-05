@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: '3.35.1'
+  FLUTTER_VERSION: '3.38.10'
 
 jobs:
   quality-and-web:
@@ -28,6 +28,17 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: scripts/local_models/package-lock.json
+      - name: Verify bundled browser runtime
+        run: |
+          npm --prefix scripts/local_models ci --ignore-scripts
+          npm --prefix scripts/local_models test
+          npm --prefix scripts/local_models run build
+          git diff --exit-code -- web/local_models
       - name: Resolve packages
         run: flutter pub get
       - name: Check formatting
@@ -111,7 +122,7 @@ jobs:
       - name: Resolve packages
         run: flutter pub get
       - name: Build Android debug APK
-        run: flutter build apk --debug
+        run: flutter build apk --debug --target-platform android-arm64,android-x64
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -121,8 +132,7 @@ jobs:
 
   windows-build:
     name: Build Windows debug app
-    # Flutter 3.35.1 recognizes Visual Studio 2022; windows-latest now uses
-    # VS 2026, which this SDK misidentifies as a VS 2019 CMake generator.
+    # Keep the supported Visual Studio 2022 toolchain stable for native assets.
     runs-on: windows-2022
     timeout-minutes: 30
     steps:

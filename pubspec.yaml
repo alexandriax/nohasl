@@ -3,7 +3,7 @@ description: A hands-on American Sign Language learning journey.
 publish_to: none
 version: 0.1.0+1
 environment:
-  sdk: ^3.9.0
+  sdk: ^3.10.9
 dependencies:
   flutter:
     sdk: flutter
@@ -12,12 +12,27 @@ dependencies:
   camera_macos: ^0.1.1
   url_launcher: ^6.3.2
   shared_preferences: ^2.5.3
+  llamadart: 0.8.22
+  crypto: ^3.0.6
+  path_provider: ^2.1.5
 dev_dependencies:
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+hooks:
+  user_defines:
+    llamadart:
+      llamadart_native_runtimes: [llama_cpp]
+      llamadart_native_backends:
+        platforms:
+          windows-x64: [cpu]
+          windows-arm64: [cpu]
+          android-arm64: [cpu]
+          android-x64: [cpu]
+          linux-x64: [cpu]
+          linux-arm64: [cpu]
 flutter:
   uses-material-design: true
   fonts:
