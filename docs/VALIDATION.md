@@ -1,6 +1,48 @@
 # Validation report
 
-Local validation on September 5, 2026, using Flutter 3.35.1, Dart 3.9.0 and Xcode 26.6 (17F113).
+## Optional local model expansion
+
+Validation on September 5, 2026 uses Flutter 3.38.10 / Dart 3.10.9 and Xcode 26.6.
+The native runtime raises application minimums to iOS 16.4 / macOS 14 and limits
+Android builds to the published arm64/x64 runtime architectures.
+
+- Full Flutter suite: **92 passed, 2 opt-in tests skipped**, no failures; static
+  analysis and formatting passed. The opt-in model paths were exercised separately
+  through the actual runtime tests below.
+- Native VM smoke: real 491,400,032-byte Qwen download independently verified by
+  SHA-256; HTTP cancellation, real Metal inference, reset, subsequent generation,
+  unload, and scoped deletion passed. The first measured turn took 2,862 ms.
+- Packaged macOS integration: full in-app download into the sandbox, byte/hash
+  verification, no auto-load, real structured generation, cancellation/reset,
+  subsequent generation, and deletion passed in 1m46s.
+- Packaged iPhone 17 / iOS 26.5 integration: the same actual in-app download and
+  lifecycle passed using the CPU runtime in 1m34s.
+- Existing macOS and iOS learning-flow integrations passed with the upgraded SDK.
+- Apple Intelligence reported available and generated real structured responses
+  on both macOS and iOS Simulator; reset/cancellation revalidation passed.
+- After adding strict local response-field limits, the real native Qwen regression
+  passed again in 28s, including cancellation/reset and subsequent generation.
+- **25 browser runtime tests passed**, covering artifact integrity, cache-only loading, cancellation,
+  scoped cleanup, complete structured output, and app-worker updates. The bundle
+  is generated reproducibly from a locked npm dependency tree without CDN imports.
+- Real WebGPU browser: explicit Smol download, cancellation/retry, successful
+  complete download, cached model loading across app-worker updates, multiple
+  four-field replies, and in-flight reply cancellation passed. Small-model replies
+  sometimes echo the learner or prompt instructions; this remains an experimental
+  choice. Gemma inference was not run. A cold offline app launch was not tested.
+
+Compact-model responses remain experimental: validated JSON establishes a
+usable response shape, not linguistic correctness or ASL proficiency. No camera
+frames are passed to any text model. Physical iPhone camera capture, mobile
+thermal behavior, Intel Mac inference, Windows inference, Android inference,
+and real assistive-technology use still require device QA. See the adapter
+reports for reproducible real-model tests and source pins:
+[browser](WEB_LOCAL_MODELS.md), [native](NATIVE_LOCAL_MODELS.md).
+
+## Earlier program expansion
+
+The following checks were completed using Flutter 3.35.1 / Dart 3.9.0 before the
+optional local model work; later reruns are recorded above.
 
 | Check | Result | Coverage |
 | --- | --- | --- |

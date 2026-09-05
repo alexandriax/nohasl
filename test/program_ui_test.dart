@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nohasl/state/learning_store.dart';
 import 'package:nohasl/data/practice_activities.dart';
 import 'package:nohasl/features/conversation/apple_intelligence.dart';
+import 'package:nohasl/features/local_models/local_model_backend_stub.dart';
+import 'package:nohasl/features/local_models/local_model_manager.dart';
 import 'package:nohasl/ui/conversation_page.dart';
 import 'package:nohasl/ui/practice_lab.dart';
 import 'package:nohasl/ui/review_hub.dart';
@@ -60,6 +62,17 @@ void main() {
     return LearningStore(await SharedPreferences.getInstance());
   }
 
+  LocalModelManager createLocalModels() {
+    // Widget tests use an explicit runtime boundary; native filesystem/FFI IO
+    // is covered separately and cannot settle inside Flutter's fake clock.
+    final manager = LocalModelManager(UnsupportedLocalModelBackend());
+    addTearDown(() async {
+      manager.dispose();
+      await manager.shutdownComplete;
+    });
+    return manager;
+  }
+
   Future<void> mount(WidgetTester tester, Widget child) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -98,7 +111,11 @@ void main() {
       for (final page in [
         PracticeLab(store: store),
         ReviewHub(store: store),
-        ConversationPage(store: store, service: TestConversationService()),
+        ConversationPage(
+          store: store,
+          service: TestConversationService(),
+          localModels: createLocalModels(),
+        ),
       ]) {
         await mount(tester, page);
         expect(
@@ -115,7 +132,11 @@ void main() {
       final store = await createStore();
       await mount(
         tester,
-        ConversationPage(store: store, service: TestConversationService()),
+        ConversationPage(
+          store: store,
+          service: TestConversationService(),
+          localModels: createLocalModels(),
+        ),
       );
       await tapText(tester, 'Begin conversation');
       expect(find.text('GUIDED PRACTICE CUE'), findsOneWidget);
@@ -139,7 +160,14 @@ void main() {
     (tester) async {
       final store = await createStore();
       final service = TestConversationService(available: true);
-      await mount(tester, ConversationPage(store: store, service: service));
+      await mount(
+        tester,
+        ConversationPage(
+          store: store,
+          service: service,
+          localModels: createLocalModels(),
+        ),
+      );
       await tapText(tester, 'At the café');
       await tapText(tester, 'Begin conversation');
       expect(service.receivedTopic, 'At the café');
@@ -153,7 +181,14 @@ void main() {
   ) async {
     final store = await createStore();
     final service = TestConversationService(available: true);
-    await mount(tester, ConversationPage(store: store, service: service));
+    await mount(
+      tester,
+      ConversationPage(
+        store: store,
+        service: service,
+        localModels: createLocalModels(),
+      ),
+    );
     await tapText(tester, 'Begin conversation');
     service.available = false;
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -175,6 +210,7 @@ void main() {
         ConversationPage(
           store: store,
           service: TestConversationService(),
+          localModels: createLocalModels(),
           initialTopic: 'A personal topic',
         ),
       );
@@ -204,7 +240,14 @@ void main() {
     final store = await createStore();
     final result = Completer<ConversationTurn>();
     final service = TestConversationService(available: true, pending: result);
-    await mount(tester, ConversationPage(store: store, service: service));
+    await mount(
+      tester,
+      ConversationPage(
+        store: store,
+        service: service,
+        localModels: createLocalModels(),
+      ),
+    );
     await tester.ensureVisible(find.text('Begin conversation'));
     await tester.tap(find.text('Begin conversation'));
     await tester.pump();

@@ -28,9 +28,19 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        ndk {
+            // The bundled model runtime publishes 64-bit Android libraries.
+            abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
+        }
     }
 
     buildTypes {
+        configureEach {
+            // Flutter initializes per-build-type defaults including ARMv7.
+            // Override those as well as defaultConfig to keep APKs 64-bit.
+            ndk.abiFilters.clear()
+            ndk.abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
+        }
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
