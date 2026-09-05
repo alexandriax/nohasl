@@ -1,6 +1,10 @@
 /// Authored demonstration curriculum. All instructional content and sign media
 /// require Deaf educator review before an instructional production release.
 /// XP and completion represent participation, never ASL proficiency.
+library;
+
+import 'program_blueprints.dart';
+
 enum LessonMode { guided, camera, story, conversation, recall }
 
 class CourseLevel {
@@ -25,12 +29,32 @@ class CourseUnit {
     required this.title,
     required this.description,
     required this.lessons,
+    this.objectives = const [],
+    this.vocabulary = const [],
+    this.grammarFocus = '',
+    this.cultureFocus = '',
+    this.prerequisiteIds = const [],
+    this.rubric = const [],
+    this.referenceUrls = const [],
+    this.scenario = '',
+    this.educatorReviewStatus = 'Pending Deaf educator review',
+    this.mediaStatus = 'Reference signer media not yet supplied',
   });
 
   final String id;
   final String title;
   final String description;
   final List<Lesson> lessons;
+  final List<String> objectives;
+  final List<String> vocabulary;
+  final String grammarFocus;
+  final String cultureFocus;
+  final List<String> prerequisiteIds;
+  final List<String> rubric;
+  final List<String> referenceUrls;
+  final String scenario;
+  final String educatorReviewStatus;
+  final String mediaStatus;
 }
 
 class Lesson {
@@ -42,6 +66,10 @@ class Lesson {
     required this.xp,
     required this.mode,
     required this.steps,
+    this.activityKind = 'guided',
+    this.objectives = const [],
+    this.requiresReferenceVideo = false,
+    this.conceptIds = const [],
   });
 
   final String id;
@@ -51,6 +79,10 @@ class Lesson {
   final int xp;
   final LessonMode mode;
   final List<LessonStep> steps;
+  final String activityKind;
+  final List<String> objectives;
+  final bool requiresReferenceVideo;
+  final List<String> conceptIds;
 }
 
 class LessonStep {
@@ -72,7 +104,7 @@ class LessonStep {
 }
 
 /// Product levels are learning stages, not official proficiency ratings.
-const List<CourseLevel> courseLevels = [
+const List<CourseLevel> _legacyCourseLevels = [
   CourseLevel(
     id: "first-connections",
     title: "First connections",
@@ -2176,6 +2208,367 @@ const List<CourseLevel> courseLevels = [
     ],
   ),
 ];
+
+/// The complete authored path. Activities needing a signer model explicitly
+/// retain that requirement; a compiled activity is not an approved video lesson.
+final List<CourseLevel> courseLevels = _buildProgram();
+
+List<CourseLevel> _buildProgram() {
+  final legacyUnits = {
+    for (final level in _legacyCourseLevels)
+      for (final unit in level.units) unit.id: unit,
+  };
+  return List<CourseLevel>.unmodifiable([
+    for (var bandIndex = 0; bandIndex < programBands.length; bandIndex++)
+      CourseLevel(
+        id: programBands[bandIndex].id,
+        title: programBands[bandIndex].title,
+        subtitle: programBands[bandIndex].subtitle,
+        description: programBands[bandIndex].description,
+        units: List<CourseUnit>.unmodifiable([
+          for (final brief in programBands[bandIndex].units)
+            CourseUnit(
+              id: brief.id,
+              title: brief.title,
+              description: '${brief.objectives.join('. ')}.',
+              objectives: brief.objectives,
+              vocabulary: brief.vocabulary,
+              grammarFocus: brief.grammarFocus,
+              cultureFocus: brief.cultureFocus,
+              prerequisiteIds: brief.prerequisiteIds,
+              rubric: brief.rubric,
+              referenceUrls: brief.referenceUrls,
+              scenario: brief.scenario,
+              educatorReviewStatus: brief.educatorReviewStatus,
+              mediaStatus: brief.mediaStatus,
+              lessons: _compileActivities(
+                brief,
+                bandIndex,
+                legacyUnits[brief.id]?.lessons ?? const [],
+              ),
+            ),
+        ]),
+      ),
+  ]);
+}
+
+String _legacyActivityKind(LessonMode mode) => switch (mode) {
+  LessonMode.guided => 'observe',
+  LessonMode.camera => 'expressive',
+  LessonMode.story => 'story',
+  LessonMode.conversation => 'information_gap',
+  LessonMode.recall => 'retrieval',
+};
+
+List<Lesson> _compileActivities(
+  ProgramUnitBlueprint brief,
+  int bandIndex,
+  List<Lesson> legacyLessons,
+) {
+  final preserved = {
+    for (final lesson in legacyLessons)
+      _legacyActivityKind(lesson.mode): lesson,
+  };
+  return List<Lesson>.unmodifiable([
+    for (final kind in programActivityKinds)
+      if (preserved[kind] case final original?)
+        Lesson(
+          id: original.id,
+          title: original.title,
+          subtitle: original.subtitle,
+          minutes: original.minutes,
+          xp: original.xp,
+          mode: original.mode,
+          steps: original.steps,
+          activityKind: kind,
+          objectives: brief.objectives,
+          requiresReferenceVideo:
+              original.id != 'a-first-hello' && original.id != 'space-to-sign',
+          conceptIds: List<String>.unmodifiable([brief.id]),
+        )
+      else
+        _compileActivity(brief, kind, bandIndex),
+  ]);
+}
+
+LessonStep _conceptCheck(ProgramUnitBlueprint brief, int variant) {
+  final offset =
+      (brief.id.codeUnits.fold<int>(0, (a, b) => a + b) + variant) %
+      brief.conceptAnswers.length;
+  return LessonStep(
+    title: 'A distinction that matters',
+    body:
+        'This question checks the concept in the written lesson. It does not assess your recognition or production of ASL.',
+    prompt: brief.conceptQuestion,
+    choices: List<String>.unmodifiable([
+      ...brief.conceptAnswers.skip(offset),
+      ...brief.conceptAnswers.take(offset),
+    ]),
+    correctChoice:
+        (brief.conceptAnswers.length - offset) % brief.conceptAnswers.length,
+  );
+}
+
+LessonStep _practiceStep(
+  ProgramUnitBlueprint brief, {
+  required String title,
+  required String task,
+  required String prompt,
+}) => LessonStep(
+  title: title,
+  body: task,
+  prompt: prompt,
+  // This is an activity prompt, not a lexical sign label or recognition target.
+  signWord: brief.title,
+);
+
+Lesson _compileActivity(
+  ProgramUnitBlueprint brief,
+  String kind,
+  int bandIndex,
+) {
+  final baseMinutes = 5 + bandIndex * 2;
+  final titleSuffix = switch (kind) {
+    'observe' => 'Watch for meaning',
+    'comprehension' => 'Follow the information',
+    'grammar' => 'Notice the grammar',
+    'expressive' => 'Make the message clear',
+    'retrieval' => 'Return without the hints',
+    'information_gap' => 'Find what your partner knows',
+    'story' => 'Take it somewhere new',
+    _ => 'Show what you can do',
+  };
+  final mode = switch (kind) {
+    'observe' || 'grammar' => LessonMode.guided,
+    'comprehension' || 'retrieval' => LessonMode.recall,
+    'expressive' || 'checkpoint' => LessonMode.camera,
+    'information_gap' => LessonMode.conversation,
+    _ => LessonMode.story,
+  };
+  final additionalMinutes = switch (kind) {
+    'expressive' => 2,
+    'information_gap' || 'story' => 3,
+    'checkpoint' => 5,
+    _ => 0,
+  };
+  final steps = switch (kind) {
+    'observe' => <LessonStep>[
+      LessonStep(
+        title: 'The communication goal',
+        body: '${brief.objectives.join('. ')}. ${brief.grammarFocus}',
+        prompt: brief.receptiveTask,
+      ),
+      LessonStep(
+        title: 'Watch the whole message',
+        body:
+            'Use a trusted, educator-reviewed signer example for this task. The reference video for this activity is not supplied in the app. First watch for the overall meaning; then revisit the feature named in the prompt.',
+        prompt: brief.receptiveTask,
+      ),
+      _conceptCheck(brief, 0),
+      LessonStep(
+        title: 'Connect form and context',
+        body: brief.cultureFocus,
+        prompt:
+            'In the example you watched, what helped with this goal: ${brief.objectives.first.toLowerCase()}? If no reference was available, mark that as your next learning need.',
+      ),
+    ],
+    'comprehension' => <LessonStep>[
+      LessonStep(
+        title: 'Hold the situation in mind',
+        body: brief.scenario,
+        prompt:
+            'Read this scenario once. Identify the participants, what is established, and what still needs clarification. This is preparation for receptive ASL practice.',
+      ),
+      LessonStep(
+        title: 'Follow meaning across signers',
+        body: brief.receptiveTask,
+        prompt:
+            'Use a reviewed full-signer example when available. First capture the overall message, then check details and uncertainty. The app does not supply or score that reference video yet.',
+      ),
+      _conceptCheck(brief, 1),
+      LessonStep(
+        title: 'Check what you understood',
+        body: 'Partner A: ${brief.partnerA}\n\nPartner B: ${brief.partnerB}',
+        prompt:
+            'Explain what each participant knows and what they need from the other. When using a signed example, compare against its reviewed meaning only after your first attempt.',
+      ),
+    ],
+    'grammar' => <LessonStep>[
+      LessonStep(
+        title: 'Form serves a meaning',
+        body: brief.grammarFocus,
+        prompt:
+            'Which part of this distinction would change what a viewer understands?',
+      ),
+      _conceptCheck(brief, 2),
+      LessonStep(
+        title: 'Find the contrast in context',
+        body: brief.scenario,
+        prompt:
+            'With an educator, compare two complete examples that differ in the feature above. Identify what changes in meaning; do not invent a movement or grammatical rule from the English wording.',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Try the taught contrast',
+        task: brief.expressiveTask,
+        prompt:
+            'Use only a construction you have seen modeled. Ask a fluent reviewer to focus on: ${brief.rubric[1].toLowerCase()}.',
+      ),
+    ],
+    'expressive' => <LessonStep>[
+      LessonStep(
+        title: 'Plan the message',
+        body: brief.scenario,
+        prompt:
+            '${brief.expressiveTask} Identify any form that needs a signer model before you rehearse.',
+      ),
+      LessonStep(
+        title: 'Choose one focus',
+        body: '${brief.grammarFocus}\n\n${brief.cultureFocus}',
+        prompt:
+            'For this attempt, focus on: ${brief.rubric.first.toLowerCase()}. Keep the intended message in mind rather than translating word by word.',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Make a first attempt',
+        task: brief.expressiveTask,
+        prompt:
+            'Keep your face and both hands visible. Use learned forms at a comfortable pace. The mirror supports observation; it does not grade your ASL.',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Revise one thing',
+        task:
+            'Compare your attempt with the trusted reference and the communication goal. Choose one specific change; repeat the task while preserving its meaning.',
+        prompt:
+            'What changed for the viewer? Ask for feedback on: ${brief.rubric[1].toLowerCase()}.',
+      ),
+    ],
+    'retrieval' => <LessonStep>[
+      LessonStep(
+        title: 'Retrieve before reviewing',
+        body: brief.scenario,
+        prompt:
+            'Without opening a model, recall the language you would need. If this is new to you, complete the guided and expressive activities first. Return to this task on another day.',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Try it from memory',
+        task: brief.expressiveTask,
+        prompt:
+            'Attempt the message using learned language before looking at hints. Mark uncertainty honestly; an unverified guess should not become your model.',
+      ),
+      _conceptCheck(brief, 3),
+      LessonStep(
+        title: 'Compare after the attempt',
+        body: brief.grammarFocus,
+        prompt:
+            'Now compare with a reviewed signer example. Separate what you recalled, what needed support, and what needs fluent feedback. Schedule a later return in a different context.',
+      ),
+    ],
+    'information_gap' => <LessonStep>[
+      LessonStep(
+        title: 'A reason to exchange information',
+        body: brief.scenario,
+        prompt:
+            'Work with a consenting practice partner. Partner A uses the next card; Partner B uses the other card. Keep the missing information hidden until the exchange. Solo use is rehearsal, not an actual conversation test.',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Partner A: your information',
+        task: brief.partnerA,
+        prompt:
+            'Communicate what you know and ask for what is missing using learned ASL. Allow a real answer and use clarification when needed. Do not read the next card before the first exchange.',
+      ),
+      LessonStep(
+        title: 'Partner B: reveal and confirm',
+        body: brief.partnerB,
+        prompt:
+            'The partner uses this information during the exchange. Afterward, compare the two accounts and identify which question resolved the gap.',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Switch roles, change a detail',
+        task: brief.transferTwist,
+        prompt:
+            'Switch roles with your partner and respond to this new condition. Review whether both people reached the same understanding, without treating a scripted solo response as fluent interaction.',
+      ),
+    ],
+    'story' => <LessonStep>[
+      LessonStep(
+        title: 'Enter the situation',
+        body: brief.scenario,
+        prompt:
+            'This is a written story premise. Identify the setting, people, and communication need before planning your signed version.',
+      ),
+      LessonStep(
+        title: 'A detail changes',
+        body: brief.transferTwist,
+        prompt:
+            'What does this change, and what remains established? Avoid adding unsupported facts. Use learned language to plan a response or retelling.',
+      ),
+      LessonStep(
+        title: 'Keep the human context',
+        body: brief.cultureFocus,
+        prompt:
+            'How does this principle affect the way you represent the people or resolve the situation?',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Tell or respond in a new context',
+        task:
+            '${brief.expressiveTask} Include the changed detail in a way a partner can follow.',
+        prompt:
+            'Use a trusted reference for unfamiliar forms. Ask a viewer to explain what they understood, then compare against the scenario rather than assigning yourself a fluency score.',
+      ),
+    ],
+    _ => <LessonStep>[
+      LessonStep(
+        title: 'Choose an authentic task',
+        body: '${brief.scenario}\n\nNew condition: ${brief.transferTwist}',
+        prompt:
+            'Prepare an attempt that includes the new condition. This checkpoint collects reflection and practice; it does not certify mastery.',
+      ),
+      LessonStep(
+        title: 'Know what evidence matters',
+        body: brief.rubric.map((criterion) => '• $criterion').join('\n'),
+        prompt:
+            'For each criterion, distinguish not yet evidenced, demonstrated with support, or independently demonstrated in this task. Linguistic accuracy and comprehensibility need qualified review.',
+      ),
+      _practiceStep(
+        brief,
+        title: 'Attempt and get feedback',
+        task: '${brief.expressiveTask}\n\n${brief.receptiveTask}',
+        prompt:
+            'Use reviewed media for receptive work and an agreed partner where the task calls for interaction. If a resource is missing, identify it instead of claiming the task was assessed.',
+      ),
+      LessonStep(
+        title: 'Choose your next learning step',
+        body:
+            'A reflection describes your current evidence. It is separate from an educator’s assessment and from the app’s participation record.',
+        prompt: 'What best describes your next step for this task?',
+        choices: const [
+          'I need a signer model or more practice.',
+          'I can attempt this with support and want specific feedback.',
+          'I have a sample ready for a fluent reviewer.',
+        ],
+      ),
+    ],
+  };
+  return Lesson(
+    id: '${brief.id}--$kind',
+    title: '${brief.title}: $titleSuffix',
+    subtitle: brief.objectives[kind == 'comprehension' ? 0 : 1],
+    minutes: baseMinutes + additionalMinutes,
+    xp: (baseMinutes + additionalMinutes) * 5,
+    mode: mode,
+    steps: List<LessonStep>.unmodifiable(steps),
+    activityKind: kind,
+    objectives: brief.objectives,
+    requiresReferenceVideo: true,
+    conceptIds: List<String>.unmodifiable([brief.id]),
+  );
+}
 
 Lesson get starterLesson => courseLevels.first.units.first.lessons.first;
 

@@ -2,9 +2,9 @@
 
 ## Architecture boundary
 
-nohasl uses one Flutter application for web, macOS, iOS, Android, and Windows. Web, macOS, and iOS are the first release targets. The current application is a local interactive foundation: curriculum data, lesson and story flows, local progress/preferences, and a self-guided camera studio. It does not yet ship an ASL recognition model, a backend, account synchronization, or an educator-verified signer-video catalog.
+nohasl uses one Flutter application for web, macOS, iOS, Android, and Windows. Web, macOS, and iOS are the first release targets. The current application includes a full authored curriculum structure, lesson and story flows, contextual practice catalog, local progress/preferences, a self-guided camera studio, a persistent retrieval queue, written self-review evidence, and an optional on-device Apple Intelligence conversation room. It does not yet ship an ASL recognition model, a backend, account synchronization, or an educator-verified signer-video catalog.
 
-The sections marked **proposed** describe evolution of that foundation, not services already deployed. Product scope and review gates are in [PRODUCT_PLAN.md](PRODUCT_PLAN.md).
+The sections marked **proposed** describe evolution of that foundation, not services already deployed. Product scope and review gates are in [PRODUCT_PLAN.md](PRODUCT_PLAN.md). The implemented review/evidence system, exact interval heuristic, data migration, and API are documented in [LEARNING_SYSTEM.md](LEARNING_SYSTEM.md).
 
 ## Decisions
 
@@ -28,8 +28,12 @@ Flutter application
 │   └── Camera studio
 │       ├── Mobile and web camera implementation
 │       └── macOS camera implementation
-├── Structured curriculum and story data
-└── Local progress and settings persistence
+├── Conversation room: authored scenarios and bounded on-device generation
+│   └── Dart service → typed MethodChannel → Apple Foundation Models
+├── Structured curriculum, story, and contextual-practice data
+├── Review scheduler: independent expressive/receptive due queues
+├── Written self-review portfolio and rubric snapshots
+└── Local progress, review, evidence, and settings persistence
 
 Platform hosts
 ├── web: browser permissions and secure-origin requirements
@@ -40,6 +44,12 @@ Platform hosts
 ```
 
 Keep teaching content and progress calculations out of custom painters and camera widgets. Camera access is a capability: missing hardware or permission does not prevent browsing or camera-free practice.
+
+## Implemented conversation adapter
+
+The conversation room offers 18 authored scenarios and custom topics with six practice stages. On supported iOS/macOS 26 devices, a native `FoundationModels` adapter provides a structured partner reply, follow-up question, optional English response idea, and practice goal. Other platforms use explicitly labeled authored rehearsal. The camera remains independent and no frames reach the model.
+
+The native bridge and Dart client both enforce input bounds, recent-history limits, serial generation, timeout handling, and cancellation. Availability is checked on entry and resume; a change does not relabel previous generated messages. Choosing a new mode, stage, or topic resets the session. Conversation text stays in memory, while a separately chosen written reflection can be saved locally with date and duration. See [APPLE_INTELLIGENCE.md](APPLE_INTELLIGENCE.md) for the exact API and native tests.
 
 ## Proposed modular structure
 
@@ -88,7 +98,7 @@ Completion and mastery are different data fields. Only an assessment with an ide
 
 The initial store awards XP once per unique lesson ID. Completed attempts add `floor(activeSeconds / 60)` minutes to the local calendar day, using actual elapsed time passed by the lesson player. Attempts below 60 seconds create no activity entry and no streak day; repeated completion can add time without duplicating XP. These are participation measures, and fractional minutes are currently discarded per attempt.
 
-For the current small local dataset, preferences-backed persistence is sufficient. Migrate to a versioned local database when review events, offline media, or sync require transactional updates. Plan corruption recovery, schema upgrades, local data reset/export, and tests before treating local progress as durable across app upgrades.
+The implemented preferences-backed schema v2 preserves the existing storage key and migrates valid v1 completion into review prompts without inventing historical evidence. It serializes saves, salvages valid review/evidence entries when adjacent records are malformed, and clears the queue/portfolio on progress reset. This is still snapshot persistence, not the proposed append-only event system. Migrate to a local database when evidence volume, offline media, or sync requires transactional updates; export/import and account synchronization remain future work.
 
 ## Camera session lifecycle
 
@@ -192,13 +202,13 @@ Offline actions get unique event IDs. Sync retries must not duplicate completion
 
 | Area | Web | macOS | iOS | Android / Windows |
 |---|---|---|---|---|
-| Build | Release web bundle in Linux CI | Native debug app in macOS CI | Debug simulator app in macOS CI | Android debug APK / Windows debug app jobs configured; first remote run pending |
+| Build | Release web bundle in Linux CI | Native debug app in macOS CI | Debug simulator app in macOS CI | Android debug APK / Windows debug app jobs; runtime validation remains separate |
 | Interaction | Pointer, touch, keyboard, resizing | Native window resizing, keyboard, focus | Touch, portrait/landscape, safe areas, dynamic text | Same shared flows plus platform conventions |
 | Camera | Secure origin, grant/deny, browser tab lifecycle | Permission + entitlement, device changes, backgrounding | Physical front camera, interruptions, rotation, backgrounding | Adapter support, permission, lifecycle and orientation |
 | Accessibility | Browser semantics and screen reader | VoiceOver and full keyboard access | VoiceOver, text scaling, reduced motion | TalkBack/Narrator and equivalent testing |
 | Release | HTTPS hosting and cache behavior | Signing/notarization and distribution | Physical-device build, signing, TestFlight | Packaging, signing, store distribution |
 
-The workflow in [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins Flutter 3.35.1 and configures analysis, unit/widget tests, the macOS integration flow, and web, macOS, iOS Simulator, Android debug APK, and Windows debug artifacts. It rebuilds the normal macOS entrypoint after integration tests before packaging. iOS integration testing runs against a selected local simulator; CI only builds the simulator app. The Android/Windows jobs still require a first remote run and local runtime validation. A passing build is compilation evidence; it does not by itself demonstrate interactive or hardware-camera testing.
+The workflow in [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins Flutter 3.35.1 and configures analysis, unit/widget tests, the macOS integration flow, and web, macOS, iOS Simulator, Android debug APK, and Windows debug artifacts. It rebuilds the normal macOS entrypoint after integration tests before packaging. iOS integration testing runs against a selected local simulator; CI only builds the simulator app. Windows uses the `windows-2022` runner because this SDK recognizes its Visual Studio 2022 toolchain; newer runner images need a separately validated Flutter upgrade. A passing build is compilation evidence; it does not by itself demonstrate interactive or hardware-camera testing.
 
 ### Local verification commands
 

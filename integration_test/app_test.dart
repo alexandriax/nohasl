@@ -55,7 +55,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(store.saved, contains('Hello'));
     await navigate('Practice studio');
+    await tester.ensureVisible(find.byTooltip('Open free practice mirror'));
+    await tester.tap(find.byTooltip('Open free practice mirror'));
+    await tester.pumpAndSettle();
     expect(find.text('Start camera'), findsOneWidget);
+    await navigate('Conversation room');
+    final aiSwitch = find.byType(Switch);
+    if (aiSwitch.evaluate().isNotEmpty) {
+      await tester.ensureVisible(aiSwitch.first);
+      await tester.tap(aiSwitch.first);
+      await tester.pumpAndSettle();
+    }
+    await tapText('Begin conversation');
+    expect(find.text('GUIDED PRACTICE CUE'), findsOneWidget);
+    await tapText('Save a reflection');
+    await tester.enterText(
+      find.byType(TextField).last,
+      'I practiced waiting for a visual reply.',
+    );
+    await tapText('Save reflection');
+    expect(store.evidence, isNotEmpty);
+    await navigate('Review & portfolio');
+    expect(store.dueReviewCount, greaterThan(0));
     expect(tester.takeException(), isNull);
   });
 }

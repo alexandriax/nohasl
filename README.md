@@ -4,13 +4,15 @@ A thoughtfully designed Flutter studio for learning American Sign Language throu
 
 ## What is built
 
-- A responsive learning dashboard, six-level curriculum, practice studio, interactive story scenes, searchable sign library, and progress view.
-- **54 authored demonstration lessons across 18 units**, with explanations, concept checks, rehearsal prompts, and reflection.
-- User-initiated live camera preview on supported web, iOS, Android, and macOS configurations, with self-review and unavailable/permission handling.
-- Local lesson completion, saved signs, daily goals, sound preferences, activity minutes, and streaks. XP is awarded once per unique completed lesson; recorded activity uses actual whole minutes spent, not advertised lesson duration.
-- A shared visual system, custom illustrations, branded platform icons, and layouts for phone and desktop.
+- **72 units and 576 learning activities** across six developmental stages. Each authored unit has communicative outcomes, vocabulary and concepts, grammar, culture, a receptive task, an expressive task, partner roles, a transfer scenario, prerequisites, references, and a three-part milestone rubric.
+- Eight activity types per unit: observation, comprehension, grammar contrast, expressive rehearsal, retrieval, information-gap exchange, story transfer, and checkpoint. All 54 existing lesson IDs retain their original content and saved progress.
+- **24 focused practice activities** with concept checks, camera rehearsal, spatial arrangement and narrative ordering interactions, and deliberate self-reflection.
+- **18 conversation scenarios plus custom topics.** On eligible iOS 26/macOS 26 devices, Apple's Foundation Models framework supplies real on-device text conversations with follow-up questions and practice goals. Authored guided rehearsal works across platforms. The model cannot see signing or translate text into ASL.
+- Separate receptive and expressive **spaced-review queues**, personal practice focuses, self-rated recall, and a local reflection portfolio. Saved state migrates existing progress without resetting XP.
+- User-initiated live camera preview on supported web, iOS, Android, and macOS configurations, with self-review, timing, camera switching, and unavailable/permission handling.
+- A responsive dashboard, interactive stories, a searchable concept library drawn from the program, local progress, custom vector artwork, bundled typography, and branded platform icons.
 
-This is an interactive product foundation. The seed curriculum awaits Deaf ASL educator review. It does **not** yet include a licensed, educator-verified signer-video course, automatic sign recognition or correction, live tutoring, cloud accounts, or a validated proficiency assessment. The camera provides self-guided practice: it does not determine whether a sign is correct. Illustrations are conceptual artwork, not authoritative sign demonstrations. Completion and XP measure participation, not fluency.
+This is a working learning application with a comprehensive **instructional blueprint**. The authored briefs and activities still need compensated Deaf educator review and authentic licensed signer media before they can constitute a complete language course. Missing reference media is surfaced in the lesson player, with links to learning resources. Concept questions and self-reflection do not assess actual ASL production. Completion and XP measure participation; neither the camera nor Apple Intelligence determines fluency. Live tutoring, validated sign feedback, and independent proficiency assessment remain production work.
 
 ## Run locally
 
@@ -45,6 +47,8 @@ flutter analyze
 flutter test
 flutter test integration_test/app_test.dart -d macos
 flutter test integration_test/app_test.dart -d <ios-simulator-device-id>
+flutter test integration_test/apple_intelligence_native_test.dart -d macos
+flutter test integration_test/apple_intelligence_native_test.dart -d <ios-simulator-device-id>
 flutter build web --release --pwa-strategy=none
 flutter build macos --debug --target lib/main.dart
 flutter build ios --simulator --debug --no-codesign --target lib/main.dart
@@ -52,19 +56,22 @@ flutter build ios --simulator --debug --no-codesign --target lib/main.dart
 
 Rebuild with `lib/main.dart` after a native integration test before distributing the local app bundle: integration tests build an app with the test entrypoint. Build outputs are `build/web`, `build/macos/Build/Products/Debug/nohasl.app`, and `build/ios/iphonesimulator/Runner.app`. Simulator/debug apps are development artifacts, not signed store releases.
 
-The initial verification pass has **19 passing unit/widget tests**, passing integration flows on **macOS and iOS Simulator**, and a successful **web release build**. Browser navigation was exercised with keyboard and pointer, including persisted XP after reload. Tests cover persistence, idempotent XP, actual practice time, curriculum integrity, lesson interaction, and responsive layout. Android and Windows have not been built or run locally. Physical iOS camera testing, Android/Windows runtime validation, store signing, and educator validation remain separate release gates.
+Local verification includes the complete unit/widget suite, native learning-flow integration on macOS and iPhone Simulator, and a web release build. The Apple Intelligence native test verifies channel registration and availability; when the local model is available it also generates a real structured response and cancels an in-flight request. Both Mac and this iOS Simulator successfully generated responses. See the [validation report](docs/VALIDATION.md) for exact results and limits.
 
-[GitHub Actions](.github/workflows/ci.yml) runs formatting, analysis, unit/widget tests, and a web build on Linux. Its macOS job builds the desktop app, executes the integration test, rebuilds the normal app entrypoint, builds the iOS Simulator app, and uploads the development artifacts. Separate jobs build an Android debug APK using JDK 17 and a Windows debug app. These workflows are configured; their first remote run is still required. CI does not claim to test real camera hardware.
+[GitHub Actions](.github/workflows/ci.yml) checks formatting, analysis, tests, and web output. Apple CI builds macOS, runs both native suites, rebuilds the normal app entrypoint, and builds iOS Simulator. Android and Windows jobs produce debug artifacts. The foundation PR has successfully built all five targets; the expanded branch is separately validated by its PR checks. CI does not validate camera hardware or guarantee that Apple Intelligence is available on the runner.
 
 ## Product and engineering notes
 
-- [Product plan](docs/PRODUCT_PLAN.md): learning journey, proposed full program, practice modes, stories, content production, assessment research, accessibility, and phased acceptance gates.
+- [Product plan](docs/PRODUCT_PLAN.md): implemented program, production roadmap, media workflow, assessment, accessibility, and release gates.
 - [Architecture](docs/ARCHITECTURE.md): implemented foundation, proposed content/data contracts, platform adapters, camera lifecycle, recognition interfaces, privacy, and testing strategy.
 - [Validation report](docs/VALIDATION.md): exact checks, tested platforms, screenshots and remaining device QA.
 - [Camera implementation](docs/CAMERA.md): supported providers, permissions, self-review and lifecycle.
-- [Curriculum](docs/CURRICULUM.md): the current lesson sequence, editorial limitations, sources, and Deaf-led review requirements.
+- [Curriculum](docs/CURRICULUM.md): sequence, editorial status, sources, and Deaf-led review requirements.
+- [Full program map](docs/PROGRAM_MAP.md): all 72 detailed unit briefs, outcomes, practice tasks, partner roles, misconceptions, and rubrics.
+- [Learning system](docs/LEARNING_SYSTEM.md): review scheduling, self-report evidence, migration, and persistence.
+- [Apple Intelligence](docs/APPLE_INTELLIGENCE.md): native architecture, availability, privacy, safeguards, and real-model tests.
 
-Instructional quality depends on compensated Deaf educators, authentic licensed signer media, cultural review, and learning evaluation. The roadmap proposes a 288-lesson core program with receptive and expressive practice, contextual grammar, adaptive review, advanced narratives, and human conversation; those are planned production capabilities, not claims about the current seed content.
+The six internal stages are learning bands, not ASLPI or SLPI ratings. Advanced transfer requires unfamiliar signers, spontaneous partner responses, delayed retrieval, varied language models, and qualified human feedback. The program map makes those requirements concrete; checking off 576 activities cannot establish proficiency by itself.
 
 ## Regenerate app icons
 

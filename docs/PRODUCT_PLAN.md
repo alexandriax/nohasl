@@ -2,7 +2,7 @@
 
 **Product direction:** a beautiful, camera-centered ASL learning studio that helps learners build practical comprehension and expressive skill, from their first visual conversation to advanced, spontaneous communication. Web, macOS, and iOS are the initial supported experiences. Android and Windows share the Flutter codebase and follow after platform-specific camera and accessibility validation.
 
-**Status:** this repository begins with an interactive application foundation. The curriculum is an editorial proposal awaiting Deaf ASL educator review. Camera practice is self-guided. The app does not yet contain a licensed, educator-verified signer-video curriculum, automated sign assessment, live tutoring, or a validated fluency assessment. Completing an activity is a practice record, not evidence that a sign was correct or that the learner is fluent.
+**Status:** the repository now includes a complete authored curriculum structure, contextual practice catalog, local spaced-review queue, written self-review portfolio, and real on-device Apple Intelligence conversation coaching within an interactive Flutter application. The curriculum remains an editorial proposal awaiting Deaf ASL educator review. Camera practice is self-guided. The app does not yet contain a licensed, educator-verified signer-video curriculum, automated sign assessment, live tutoring, or a validated fluency assessment. Completing an activity is a practice record, not evidence that a sign was correct or that the learner is fluent.
 
 ## Principles that determine the product
 
@@ -19,12 +19,13 @@
 | Area | Initial application foundation | Required before a learning release |
 |---|---|---|
 | Experience | Responsive Flutter learning dashboard, curriculum navigation, practice studio, stories, library, and personal progress | Usability studies with new signers and Deaf reviewers; accessible interaction across input modes |
-| Lessons | Structured sample objectives, explanations, prompts, reflection, and knowledge checks | Reviewed instructional scripts, valid distractors, licensed signer demonstrations, pilot learning evaluation |
+| Lessons | Full authored sequence with objectives, explanations, prompts, reflection, and concept checks; 24 additional contextual practice activities | Reviewed instructional scripts, valid distractors, licensed signer demonstrations, pilot learning evaluation |
 | Camera | User-initiated local live preview and guided self-review with honest unavailable/permission states | Device camera matrix, framing assistance, verified mirroring/orientation, lifecycle and permission testing |
 | Assessment | Knowledge-check answers and learner-reported practice/completion | Separated receptive/expressive rubrics, delayed checks, educator validation and calibrated limited-scope models |
 | Stories | Interactive text/illustrated scenes and branches as an experience prototype | Deaf-authored signed scenes, meaningful ASL comprehension branches, expressive response opportunities |
-| Content | Proposed multilevel sequence and a browsable sample vocabulary catalog | Editorial CMS, reviewer approvals, regional metadata, media rights, release versioning |
-| Persistence | Local preferences, completion, and saved content | Versioned migrations, export/delete controls, optional account sync and conflict handling |
+| Conversation | 18 authored scenarios, custom topics, six practice stages, native Apple Intelligence text generation, and guided cross-platform fallback | Evaluate conversational quality across topics, model versions, accessibility needs, and longer exchanges; add reviewed signed partner media |
+| Content | 72 unit briefs, eight activities each, and a browsable concept library | Editorial CMS, reviewer approvals, regional metadata, media rights, release versioning |
+| Persistence | Local preferences, completion, saved content, independent receptive/expressive review schedules, self-review evidence, v1 migration and reset | Export/import controls, database migrations as volume grows, optional account sync and conflict handling |
 | Platforms | Flutter targets for web, macOS, iOS, Android, and Windows | Release-specific build, runtime, accessibility, performance, and hardware camera gates |
 
 Illustrations establish visual character and explain concepts. They are not authoritative sign demonstrations. A stylized hand image or generic motion path must not be presented as a reliable lesson in producing a sign.
@@ -66,9 +67,9 @@ The proposed levels are internal product stages, not certified proficiency class
 
 Depicting/classifier work must be taught in context: a handshape alone does not establish the referenced entity or its meaning. See [ASL University's discussion of classifier constructions](https://www.lifeprint.com/asl101/pages-signs/classifiers/classifiers-main.htm).
 
-### Proposed program size and dependencies
+### Authored program size and production dependencies
 
-- Plan for **6 stages × 8 units × 6 lessons = 288 core lessons**, with short review activities, signed story episodes, and capstones alongside them. This is a production scope proposal; the current app contains **6 stages × 3 units × 3 lessons = 54 authored demonstration lessons**, pending educator review.
+- The expanded authored program contains **6 stages × 12 units × 8 learning activities = 576 activities**, plus 24 contextual practice exercises and a persistent review queue. It preserves the original 54 lesson IDs for existing local progress. This replaces the earlier 288-lesson sizing proposal. The full authored sequence still needs educator review, licensed signer media, and learning evaluation before it becomes a validated instructional program.
 - Each unit has prerequisite skills, target skills, retrieval items, receptive and expressive variants, one cultural thread, one contextual transfer task, and an assessment rubric.
 - Keep separate skill records for recognizing a concept, producing it, using its grammar in context, and transferring it to conversation. Strength in one does not automatically promote another.
 - Allow learners to revisit any material. Recommend advancement using evidence and confidence, with optional educator placement; do not permanently lock useful material behind streaks or payment-triggering failure loops.
@@ -111,7 +112,7 @@ Begin with curated branches and teacher-reviewed responses. Later conversation A
 
 **Later automatic feedback:** separate capture quality from recognized content and from a grammatical interpretation. Limit evaluation to supported tasks and variants, explain the specific observation, and offer “I couldn't assess this” when needed. A learner can dispute feedback and still complete the activity. Never penalize low light, unsupported hardware, or an inaccessible movement requirement as a language error.
 
-**Review scheduler:** collect the attempted skill, assessment type, outcome source, elapsed time, item version, prior exposure, and confidence. Use simple transparent intervals initially; evaluate an adaptive scheduling algorithm against delayed recall before adopting it. Separate receptive and expressive evidence. Mix due reviews with new material, varied signers, contextual use, and rest. Enforce a daily workload ceiling and let the learner reschedule.
+**Review scheduler:** the implemented queue separates expressive and receptive concepts, enqueues first-completion concepts without duplicates, and applies a transparent self-rating heuristic: Again retries in ten minutes; initial Hard/Good reviews in one day and Easy in four days; later intervals increase with rating and cap at 90 days. Due sessions default to ten items. Ratings and reflections persist locally with actual elapsed time. This is not a validated memory model or ASL assessment. [LEARNING_SYSTEM.md](LEARNING_SYSTEM.md) documents the algorithm, APIs, migration, and test evidence. Later evaluation should measure delayed recall and transfer before changing the algorithm or making effectiveness claims.
 
 **Progress:** show practice time, completed activities, review due, and a skills map with evidence labels. Distinguish “practiced,” “recalled,” “used in context,” and “reviewed by an educator.” Award celebrations for effort and meaningful milestones, not unsupported proficiency percentages.
 
@@ -154,7 +155,7 @@ Landmark tools can supply hand positions and handedness; they do not themselves 
 
 | Phase | Deliverable | Acceptance gate |
 |---|---|---|
-| 0 · Foundation | Premium responsive Flutter shell; seed lessons; story branches; library; local progress; honest live camera studio; CI | Static analysis and meaningful tests pass; web/macOS/iOS build evidence recorded; core flows run on macOS and iOS Simulator; no unsupported AI/proficiency claims |
+| 0 · Foundation and authored program | Premium responsive Flutter shell; six-stage authored curriculum; story branches; contextual practice; library; local review queue and reflection portfolio; honest live camera studio; CI | Static analysis and meaningful tests pass; web/macOS/iOS build evidence recorded; core flows run on macOS and iOS Simulator; data migration verified; no unsupported AI/proficiency claims |
 | 1 · Reviewed beginner pilot | First 2 complete units, approximately 12 lessons, 1 signed story, reviewed signer media, accessible playback, controlled learner study | 100% published instructional media reviewed and licensed; all lessons include receptive and expressive work; learners complete target communication tasks with educator-observed evidence; physical iPhone and Mac camera paths pass |
 | 2 · Learning alpha | Entire first stage; review scheduling; offline lesson packs; versioned content pipeline; optional account sync; capture-quality assistance | Reviewed curriculum coverage, delayed recall baseline, reliable sync/delete behavior, real-device performance and accessibility gates; capture assistance does not label sign correctness |
 | 3 · Supported coaching beta | Scoped sign production model; educator feedback tools; stages 2–3; richer stories; Android/Windows camera support | Predeclared educator-approved evaluation thresholds met on external signer-disjoint data; low-confidence abstention and appeal work; platform feature-parity and permission tests pass |
@@ -182,6 +183,6 @@ Set numerical targets after the beginner pilot establishes a baseline. Do not in
 2. Recruit and compensate a Deaf curriculum lead and an independent reviewer; approve the first unit's scope.
 3. Commission the initial media package and metadata schema; integrate accessible playback and reviewed captions.
 4. Add physical iPhone/iPad and Mac camera tests for grant, denial, revocation, mirroring, rotation, interruption, backgrounding, and cleanup.
-5. Implement reviewed observe–try–reflect lesson flow, per-skill evidence, and a simple review queue.
+5. Validate the implemented observe–try–reflect flow, separate review domains, and written self-review portfolio with educators; integrate their approved media and rubrics.
 6. Run a small moderated pilot; revise confusing interactions and content before scaling the program.
 7. Prototype capture-quality assistance using consented data and a supported-device benchmark; keep recognition behind a separate research gate.
