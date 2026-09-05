@@ -1,0 +1,140 @@
+name: Flutter quality and builds
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.35.1'
+
+jobs:
+  quality-and-web:
+    name: Analyze, test, and build web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - name: Static analysis
+        run: flutter analyze
+      - name: Unit and widget tests
+        run: flutter test --coverage
+      - name: Build web
+        run: flutter build web --release
+      - name: Upload web bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: nohasl-web
+          path: build/web
+          if-no-files-found: error
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: error
+
+  apple-builds:
+    name: Build macOS and iOS Simulator
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Toolchain details
+        run: flutter doctor -v
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Build macOS
+        run: flutter build macos --debug
+      - name: macOS integration tests
+        run: flutter test integration_test/app_test.dart -d macos
+      - name: Rebuild macOS application entrypoint
+        run: flutter build macos --debug --target lib/main.dart
+      - name: Build iOS Simulator
+        run: flutter build ios --simulator --debug --no-codesign
+      - name: Package native apps
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Debug/nohasl.app nohasl-macos-debug.zip
+          ditto -c -k --sequesterRsrc --keepParent build/ios/iphonesimulator/Runner.app nohasl-ios-simulator.zip
+      - name: Upload macOS debug app
+        uses: actions/upload-artifact@v4
+        with:
+          name: nohasl-macos-debug
+          path: nohasl-macos-debug.zip
+          if-no-files-found: error
+      - name: Upload iOS Simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: nohasl-ios-simulator
+          path: nohasl-ios-simulator.zip
+          if-no-files-found: error
+
+  android-build:
+    name: Build Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+      - name: Upload Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nohasl-android-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+
+  windows-build:
+    name: Build Windows debug app
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Build Windows debug app
+        run: flutter build windows --debug
+      - name: Upload Windows debug app
+        uses: actions/upload-artifact@v4
+        with:
+          name: nohasl-windows-debug
+          path: build/windows/x64/runner/Debug
+          if-no-files-found: error
